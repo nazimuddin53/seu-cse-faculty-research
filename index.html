@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEU CSE — Faculty Research & Thesis Supervision Finder</title>
+<style>
+/* ============ tokens ============ */
+:root{
+  --bg:#f4f6f9; --panel:#fff; --panel2:#f9fafc; --line:#e3e7ed; --line2:#eef1f5;
+  --ink:#111621; --muted:#5d6775; --faint:#8b95a4;
+  --accent:#0952ab; --accent-ink:#0952ab; --accent-soft:#e7eefb;
+  --mark:#fff3bf; --mark-ink:#5c4400;
+  --c-ai:#2f5fd0;  --b-ai:#e8eefc;
+  --c-app:#0d7360; --b-app:#dff2ed;
+  --c-sys:#9c5606; --b-sys:#fbeedc;
+  --c-eng:#7137bd; --b-eng:#f0e8fb;
+  --star:#e0a010;
+  --sh:0 1px 2px rgba(16,24,40,.04),0 6px 18px rgba(16,24,40,.05);
+  --r:11px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1015; --panel:#151920; --panel2:#1a1f27; --line:#262c36; --line2:#20252e;
+  --ink:#e6eaf1; --muted:#98a3b2; --faint:#6b7686;
+  --accent:#5b9bf0; --accent-ink:#8fbcf7; --accent-soft:#152338;
+  --mark:#4a3c00; --mark-ink:#ffe89a;
+  --c-ai:#8fb4f8;  --b-ai:#1a2540;
+  --c-app:#5fcfb5; --b-app:#0f302a;
+  --c-sys:#e0a860; --b-sys:#332510;
+  --c-eng:#c3a0f0; --b-eng:#281c3c;
+  --star:#f0c040;
+  --sh:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+}}
+:root[data-theme="dark"]{
+  --bg:#0d1015; --panel:#151920; --panel2:#1a1f27; --line:#262c36; --line2:#20252e;
+  --ink:#e6eaf1; --muted:#98a3b2; --faint:#6b7686;
+  --accent:#5b9bf0; --accent-ink:#8fbcf7; --accent-soft:#152338;
+  --mark:#4a3c00; --mark-ink:#ffe89a;
+  --c-ai:#8fb4f8;  --b-ai:#1a2540;
+  --c-app:#5fcfb5; --b-app:#0f302a;
+  --c-sys:#e0a860; --b-sys:#332510;
+  --c-eng:#c3a0f0; --b-eng:#281c3c;
+  --star:#f0c040;
+  --sh:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+mark{background:var(--mark);color:var(--mark-ink);padding:0 1px;border-radius:2px}
+
+/* ============ masthead ============ */
+.mast{border-bottom:1px solid var(--line);background:var(--panel)}
+.mast .in{max-width:1340px;margin:0 auto;padding:16px 22px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.brand h1{font-size:18px;margin:0;letter-spacing:-.01em;line-height:1.25}
+.brand p{margin:2px 0 0;font-size:12.5px;color:var(--faint)}
+.mstats{display:flex;gap:22px;margin-left:auto;flex-wrap:wrap}
+.mstat b{display:block;font-size:17px;line-height:1.1;font-variant-numeric:tabular-nums}
+.mstat span{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.iconbtn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+  width:34px;height:34px;cursor:pointer;color:var(--muted);font-size:15px;line-height:1}
+.iconbtn:hover{border-color:var(--accent);color:var(--accent-ink)}
+
+/* ============ shell ============ */
+.shell{max-width:1340px;margin:0 auto;padding:0 22px 80px;display:grid;
+  grid-template-columns:264px minmax(0,1fr);gap:26px;align-items:start}
+@media (max-width:940px){.shell{grid-template-columns:1fr;gap:0}}
+
+/* ============ sidebar ============ */
+.side{position:sticky;top:14px;padding:20px 0 30px;max-height:calc(100vh - 28px);overflow-y:auto}
+@media (max-width:940px){
+  .side{position:static;max-height:none;padding:0 0 8px;overflow:visible}
+  .side[data-open="false"] .sidebody{display:none}
+  .sidetoggle{display:flex !important}
+}
+.sidetoggle{display:none;width:100%;align-items:center;gap:9px;margin:14px 0 0;padding:11px 14px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);cursor:pointer;font-weight:600;font-size:14px}
+.sidetoggle .cnt{margin-left:auto;font-size:12px;color:var(--faint);font-weight:500}
+.fgroup{margin-bottom:20px}
+.fgroup>h4{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);
+  margin:0 0 8px;font-weight:700;display:flex;align-items:center;gap:7px}
+.fgroup>h4::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--gc,var(--faint))}
+.opt{display:flex;align-items:center;gap:9px;padding:5px 8px;border-radius:7px;cursor:pointer;
+  font-size:13.2px;color:var(--muted);user-select:none;transition:.1s}
+.opt:hover{background:var(--panel)}
+.opt input{accent-color:var(--gc,var(--accent));margin:0;flex:none}
+.opt .nm{flex:1;min-width:0}
+.opt .n{font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums;flex:none}
+.opt[data-on="true"]{color:var(--ink);font-weight:600}
+.opt[data-on="true"] .n{color:var(--gc,var(--accent))}
+.sidefoot{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:3px}
+.linkbtn{background:none;border:0;color:var(--accent-ink);cursor:pointer;font-size:12.5px;text-align:left;padding:4px 8px;border-radius:6px}
+.linkbtn:hover{background:var(--accent-soft)}
+
+/* ============ main ============ */
+main{padding:20px 0 0;min-width:0}
+.toolbar{position:sticky;top:0;z-index:15;background:var(--bg);padding:0 0 12px;margin-bottom:2px}
+.searchwrap{position:relative}
+.searchwrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--faint);pointer-events:none}
+#q{width:100%;padding:13px 92px 13px 42px;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel);outline:none;font-size:15px;box-shadow:var(--sh)}
+#q:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.kbd{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--faint);
+  border:1px solid var(--line);border-radius:5px;padding:2px 6px;background:var(--panel2)}
+.tbrow{display:flex;align-items:center;gap:10px;margin-top:11px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden;box-shadow:var(--sh)}
+.seg button{border:0;background:transparent;color:var(--muted);padding:8px 13px;cursor:pointer;
+  font-size:13.2px;border-right:1px solid var(--line);white-space:nowrap}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+select#sort{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:13.2px;cursor:pointer}
+.count{margin-left:auto;font-size:12.8px;color:var(--faint);font-variant-numeric:tabular-nums}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pills:empty{display:none}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 8px 4px 10px;
+  border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--muted)}
+.pill button{background:none;border:0;cursor:pointer;color:var(--faint);font-size:14px;line-height:1;padding:0}
+.pill button:hover{color:var(--ink)}
+.pill.reset{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink);cursor:pointer;padding:4px 11px}
+
+/* ============ area pills ============ */
+.ap{font-size:11.3px;padding:2.5px 8px;border-radius:5px;white-space:nowrap;cursor:pointer;
+  border:1px solid transparent;line-height:1.5}
+.ap:hover{border-color:currentColor}
+.ap.ai{background:var(--b-ai);color:var(--c-ai)}
+.ap.app{background:var(--b-app);color:var(--c-app)}
+.ap.sys{background:var(--b-sys);color:var(--c-sys)}
+.ap.eng{background:var(--b-eng);color:var(--c-eng)}
+
+/* ============ faculty rows ============ */
+.rows{display:grid;gap:8px}
+.row{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.row.leave .rh{opacity:.62}
+.rh{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:12px;padding:13px 15px;
+  cursor:pointer;align-items:start}
+.rh:hover{background:var(--panel2)}
+.star{background:none;border:0;cursor:pointer;font-size:16px;line-height:1;color:var(--line);padding:2px 0}
+.star[data-on="true"]{color:var(--star)}
+.star:hover{color:var(--star)}
+.rname{font-size:15px;font-weight:640;letter-spacing:-.01em;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rdes{font-size:12.8px;color:var(--muted);margin:1px 0 0}
+.rpills{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.rmeta{text-align:right;font-size:11.5px;color:var(--faint);display:grid;gap:3px;justify-items:end;flex:none}
+.hit{background:var(--accent-soft);color:var(--accent-ink);font-size:11.3px;font-weight:650;
+  padding:2.5px 8px;border-radius:5px;white-space:nowrap}
+.tagleave{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--b-sys);color:var(--c-sys)}
+.caret{color:var(--faint);font-size:12px;transition:transform .15s}
+.row[data-open="true"] .caret{transform:rotate(90deg)}
+.rb{display:none;padding:0 15px 16px 57px;border-top:1px solid var(--line2)}
+.row[data-open="true"] .rb{display:block}
+.sec{margin-top:14px}
+.sec>h5{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:0 0 7px;font-weight:700}
+ul.tl{margin:0;padding-left:16px;font-size:13.4px;color:var(--muted);display:grid;gap:4px}
+ul.tl li::marker{color:var(--faint)}
+ul.tl li.m{color:var(--ink)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.inline{font-size:13.2px;color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.links a{font-size:11.8px;text-decoration:none;padding:4px 10px;border-radius:6px;
+  border:1px solid var(--line);color:var(--muted);background:var(--panel2)}
+.links a:hover{border-color:var(--accent);color:var(--accent-ink)}
+
+/* ============ topic index ============ */
+.tix{display:grid;gap:7px}
+.tix .t{background:var(--panel);border:1px solid var(--line);border-radius:9px;box-shadow:var(--sh);
+  padding:11px 14px;display:grid;grid-template-columns:minmax(0,1fr) 214px;gap:16px;align-items:center}
+@media (max-width:700px){.tix .t{grid-template-columns:1fr;gap:6px}}
+.tix .txt{font-size:13.8px;line-height:1.45}
+.tix .aps{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.tix .sup{text-align:right;font-size:12.8px}
+@media (max-width:700px){.tix .sup{text-align:left}}
+.tix .sup b{font-weight:640;display:block;font-size:13.2px}
+.tix .sup span{color:var(--faint);font-size:11.6px}
+.tix .sup a{color:var(--accent-ink);text-decoration:none;font-size:11.6px}
+
+/* ============ area accordions ============ */
+.asec{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);
+  margin-bottom:9px;overflow:hidden;border-left:3px solid var(--ac,var(--line))}
+.ah{display:flex;align-items:center;gap:11px;padding:13px 16px;cursor:pointer}
+.ah:hover{background:var(--panel2)}
+.ah h3{margin:0;font-size:14.6px;font-weight:640}
+.ah .d{font-size:12.5px;color:var(--faint);margin:2px 0 0}
+.ah .n{margin-left:auto;font-size:12px;color:var(--faint);flex:none;font-variant-numeric:tabular-nums}
+.ab{display:none;padding:2px 16px 14px 16px;border-top:1px solid var(--line2)}
+.asec[data-open="true"] .ab{display:block}
+.prow{display:grid;grid-template-columns:216px minmax(0,1fr);gap:16px;padding:10px 0;border-top:1px dashed var(--line)}
+.prow:first-child{border-top:0}
+@media (max-width:640px){.prow{grid-template-columns:1fr;gap:4px}}
+.prow .w{font-size:13.4px;font-weight:620}
+.prow .w small{display:block;font-weight:400;color:var(--faint);font-size:11.6px;margin-top:1px}
+.prow .x{font-size:13.2px;color:var(--muted);display:grid;gap:3px}
+
+.empty{text-align:center;color:var(--faint);padding:64px 22px;border:1px dashed var(--line);border-radius:var(--r);font-size:14px}
+.empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:6px}
+footer{max-width:1340px;margin:0 auto;padding:26px 22px 50px;color:var(--faint);font-size:12.3px;line-height:1.6;border-top:1px solid var(--line)}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="mast"><div class="in">
+  <div class="brand">
+    <h1>SEU CSE — Thesis Supervision Finder</h1>
+    <p>Southeast University · Department of Computer Science &amp; Engineering</p>
+  </div>
+  <div class="mstats" id="mstats"></div>
+  <button class="iconbtn" id="theme" title="Toggle theme" aria-label="Toggle theme">◐</button>
+</div></div>
+
+<div class="shell">
+
+  <aside class="side" id="side" data-open="false">
+    <button class="sidetoggle" id="sidetoggle" aria-expanded="false">
+      <span>Filters</span><span class="cnt" id="sideCnt"></span>
+    </button>
+    <div class="sidebody" id="sidebody"></div>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <div class="searchwrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="q" placeholder="Search a topic — e.g. blockchain, tumour, Bangla, metamaterial, fraud…" aria-label="Search topics and faculty">
+        <span class="kbd">/</span>
+      </div>
+      <div class="tbrow">
+        <div class="seg" role="group" aria-label="View">
+          <button data-view="fac" aria-pressed="true">Faculty</button>
+          <button data-view="topic" aria-pressed="false">Topic index</button>
+          <button data-view="area" aria-pressed="false">By area</button>
+        </div>
+        <select id="sort" aria-label="Sort">
+          <option value="rel">Sort: best match</option>
+          <option value="seniority">Sort: seniority</option>
+          <option value="pubs">Sort: publication volume</option>
+          <option value="name">Sort: name (A–Z)</option>
+        </select>
+        <span class="count" id="count"></span>
+      </div>
+      <div class="pills" id="pills"></div>
+    </div>
+
+    <div id="out"></div>
+  </main>
+</div>
+
+<footer>
+  Compiled from Southeast University faculty profile records for the Department of Computer Science &amp; Engineering.
+  Research areas are derived from each member's stated interests and publication record; supervision topics are distilled
+  from recent published and supervised work. Publication counts reflect the source records and may lag the university's
+  live profile — always confirm current availability and interests with the department before approaching a supervisor.
+  Shortlist stars are saved in this browser only.
+</footer>
+
+<script>
+/* ================= taxonomy ================= */
+const CLUSTERS = {
+  ai: {name:"AI, Data & Language", css:"ai", color:"var(--c-ai)"},
+  app:{name:"Application Domains",  css:"app",color:"var(--c-app)"},
+  sys:{name:"Systems, Networks & Security", css:"sys", color:"var(--c-sys)"},
+  eng:{name:"Engineering & Theory", css:"eng", color:"var(--c-eng)"}
+};
+const AREAS = {
+  ml:   {c:"ai", name:"Machine Learning & Data Science", desc:"Classical ML, ensemble learning, feature selection, predictive analytics on tabular and clinical data."},
+  dl:   {c:"ai", name:"Deep Learning & Computer Vision", desc:"CNNs, vision transformers, transfer learning, image classification and segmentation."},
+  xai:  {c:"ai", name:"Explainable AI (XAI)", desc:"SHAP, LIME and Grad-CAM interpretability layered onto ML and DL models."},
+  nlp:  {c:"ai", name:"NLP & Bangla Language Processing", desc:"Sentiment analysis, dialect and NER corpora, transformers, machine translation for Bangla."},
+  health:{c:"app",name:"Health Informatics & Medical AI", desc:"Disease prediction and diagnosis from clinical records and medical imaging."},
+  agri: {c:"app",name:"Agriculture, Energy & Environment", desc:"Crop and livestock disease detection, yield prediction, air quality, smart grids."},
+  fin:  {c:"app",name:"FinTech & Financial Data Analysis", desc:"Stock forecasting, fraud detection, credit risk, uplift modelling, portfolio optimisation."},
+  edu:  {c:"app",name:"Education Technology & Pedagogy", desc:"Blended and online learning, OBE and CO-PO attainment, student performance analytics."},
+  sec:  {c:"sys",name:"Cybersecurity & Cryptography", desc:"Malware and intrusion detection, phishing, network security, encryption schemes."},
+  net:  {c:"sys",name:"Networking & Wireless Communication", desc:"MAC protocols, Wi-Fi 6 / OFDMA, SDN and DTN, TCP, body-area and vehicular networks."},
+  iot:  {c:"sys",name:"IoT & Embedded Systems", desc:"Sensor-driven automation, smart devices, embedded control and monitoring."},
+  bc:   {c:"sys",name:"Blockchain & Distributed Systems", desc:"Blockchain-backed records, IPFS storage, smart contracts, serverless architecture."},
+  se:   {c:"eng",name:"Software Engineering & Information Systems", desc:"Requirements engineering, ERP, e-commerce, data warehousing and ETL, recommender systems."},
+  math: {c:"eng",name:"Mathematics & Optimization", desc:"Fuzzy logic, linear and inventory optimisation, numerical methods, physics-informed models."},
+  hw:   {c:"eng",name:"Electronics, Antennas & Metamaterials", desc:"Metamaterial absorbers and sensors, antennas, THz, EMI shielding, QCA and VLSI circuits."},
+  qdna: {c:"eng",name:"Quantum & DNA Computing", desc:"Quantum circuit design and multi-valued DNA computing architectures."},
+  algo: {c:"eng",name:"Algorithms & Competitive Programming", desc:"Problem setting, contest analytics, algorithmic problem solving."}
+};
+const RANK_ORDER = {"Professor":0,"Associate Professor":1,"Assistant Professor":2,"Lecturer":3};
+
+const AREA_KW = {
+  ml:["machine learning","ensemble","feature selection","predict","classif","random forest","svm","stacking","clustering","k-means"],
+  dl:["deep learning","cnn","transformer","vision","transfer learning","yolo","u-net","neural network","resnet","vgg","efficientnet","segmentation"],
+  xai:["explainable","shap","lime","grad-cam","interpret"],
+  nlp:["bangla","bengali","language","sentiment","ner","named-entity","translation","dialect","text","comment","chatbot","stackoverflow","ocr","audio","corpus"],
+  health:["disease","cancer","diagnos","clinical","medical","patient","tumour","tumor","health","diabet","malaria","retinopathy","osteoporosis","hepatitis","covid","parkinson","alzheimer","pcos","thyroid","ulcer","cardio","heart","brain","dementia","asthma","insomnia","melanoma","histopath","body area"],
+  agri:["crop","leaf","agricultur","farming","yield","fish","shrimp","aquaculture","air quality","grid","renewable","energy","rainfall","flood","weather","tomato","pest","fruit","livestock","dispatch","power"],
+  fin:["stock","fraud","financial","market","credit","portfolio","uplift","bank","price"],
+  edu:["learning","student","teaching","curricul","education","academic","co-po","pedagog","school"],
+  sec:["security","encrypt","malware","intrusion","phishing","attack","ddos","crypt","authentication","watermark","honeypot","surveillance","weapon","violence","e-voting","secure"],
+  net:["network","tcp","mac","wi-fi","802.11","802.15","sdn","dtn","routing","channel","wireless","handoff","manet","spectrum","ofdma","scheduling","communication","modulation","fading"],
+  iot:["iot","sensor","smart home","smart mirror","embedded","automation","smart farming","gas leak","attendance","monitoring","accident"],
+  bc:["blockchain","ipfs","smart contract","serverless","ledger","certificate"],
+  se:["erp","e-commerce","etl","data warehous","requirement","recommend","software","business","layout planning","rental","group formation"],
+  math:["fuzzy","optimis","optimiz","inventory","lot-size","transportation problem","simplex","numerical","physics-informed","t-norm","equation","convective","fluid","heat transfer"],
+  hw:["metamaterial","antenna","absorber","terahertz","thz","fss","qca","verilog","asic","circuit","emi","resonator","microwave","decoder","encoder","multiplexer","displacement","remote sensing","vibration"],
+  qdna:["dna computing","quantum"],
+  algo:["contest","icpc","algorithm","judge","keyboard","competitive","programming contest"]
+};
+
+/* ================= data ================= */
+const FACULTY = [
+{name:"Prof. Yusuf Mahbubul Islam, PhD", designation:"Vice Chancellor & Professor", rank:"Professor",
+ type:"Full Time", onLeave:false, email:"ymislam@seu.edu.bd", room:"112, 1st Floor", pubs:5,
+ edu:["PhD, Design Manufacturing & Engineering Management — University of Strathclyde, UK","MSc Instructional Design & Technology — Open University Malaysia","BSc EEE — Heriot-Watt University, UK"],
+ areas:["edu","ml","sec"],
+ interests:["Computer Science","Data Science","Education Delivery","STEM","Blended Learning","Interactive Teaching Techniques"],
+ topics:["Interactive and blended learning models for tertiary education",
+  "Inquiry-based, question-driven learning design and its cognitive effects",
+  "Student self-diagnosis of study problems to improve academic performance",
+  "Communicative Language Teaching (CLT) effectiveness in rural schooling",
+  "Chaotic-system based medical image encryption and security"],
+ courses:[], scholar:"https://scholar.google.com/citations?user=zU3RtmMAAAAJ&hl=en",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=16230075400",
+ linkedin:"https://www.linkedin.com/in/yusuf-mahbubul-islam-b062b36/"},
+
+{name:"Prof. Dr. Abdul Kadar Muhammad Masum", designation:"Professor & Director, IQAC", rank:"Professor",
+ type:"Full Time", onLeave:false, email:"akmmasum@seu.edu.bd", room:"105, 1st Floor", pubs:90,
+ edu:["PhD (Bright Spark Scholarship) — University of Malaya, Malaysia","Senior Research Associate, Machine Learning — Charles Sturt University, Australia","MSc CSE — United International University","BSc CSE — International Islamic University Chittagong"],
+ areas:["ml","dl","xai","health","fin","sec","agri","nlp"],
+ interests:["AI for healthcare — early diagnosis and disease prediction","Financial data analysis — bankruptcy, fraud detection, FinTech","Sustainable development through technology — smart agriculture, aquaculture, renewable energy"],
+ topics:["Explainable ensemble ML for disease diagnosis — thyroid, PCOS, hepatitis B, Alzheimer's, prostate cancer",
+  "Hybrid vision transformer frameworks for brain tumour and ocular disease classification",
+  "Deep learning for aquaculture and crop disease detection — shrimp, fish, leafy vegetables, brinjal",
+  "Stock price forecasting with temporal attention, GraphSAGE and Koopman-based models",
+  "Credit-card fraud detection and time-sensitive marketing uplift modelling with explainable AI",
+  "Malware detection robustness against evasion and poisoning attacks",
+  "Network intrusion detection and lightweight DDoS defence in software-defined networking",
+  "Bangla dialect and Romanized-Bangla machine translation; ChatGPT sentiment benchmarking",
+  "Smartphone-sensor human activity recognition for early diabetes onset prediction",
+  "Nash-equilibrium game-theoretic decision support for compliance-aligned portfolio optimisation"],
+ courses:["Artificial Intelligence","Data Mining & Machine Learning","Software Engineering","Research Methodology","Software Project Management","System Analysis and Design","Management Information System"],
+ scholar:"https://scholar.google.com/citations?hl=en&user=cHXeV-oAAAAJ",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=56495235800",
+ orcid:"https://orcid.org/0000-0002-8642-5688",
+ linkedin:"https://www.linkedin.com/in/masumphd/"},
+
+{name:"Shahriar Manzoor", designation:"Chairman & Associate Professor", rank:"Associate Professor",
+ type:"Full Time", onLeave:false, email:"smanzoor@seu.edu.bd", room:"530, 5th Floor", pubs:7,
+ edu:["BUET — ICPC Dhaka Regional 3rd place, 1999","ICPC World Finals Judge 2003–2018 · ICPC De Blasi Award 2021"],
+ areas:["algo","edu","ml","health"],
+ interests:["Competitive programming and problem setting","Programming contest analytics","Applied ML for medical diagnosis"],
+ topics:["Submission-pattern analysis of ICPC contests — language and error-type trends",
+  "Statistical analysis of online judge and programming contest data",
+  "Common failure modes of novice versus intermediate competitive programmers",
+  "Ensemble ML with SMOTE and feature selection for thyroid disease diagnosis",
+  "Hybrid VGG16 CNN with augmentation and dropout for malaria diagnosis",
+  "Optimal keyboard-layout and combinatorial optimisation problems"],
+ courses:["C Programming Language","Data Structure","Discrete Mathematics","Numerical Methods","Probability and Queuing Theory","Coordinate Geometry","Mathematical Analysis for CS"],
+ scholar:"https://scholar.google.com/citations?user=SLjAQOIAAAAJ&hl=en",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=57193202508",
+ orcid:"https://orcid.org/0009-0000-2668-4357"},
+
+{name:"Dr. Gazi Zahirul Islam", designation:"Associate Professor", rank:"Associate Professor",
+ type:"Full Time", onLeave:false, email:"gazi.islam@seu.edu.bd", room:"606, 6th Floor", pubs:10,
+ edu:["Post-doctoral research in IoT — International Islamic University Malaysia","PhD — Bangladesh University of Professionals","MSc Wireless Communications Systems Engineering — University of Greenwich, UK","BSc CSE — CUET"],
+ areas:["net","iot","hw","ml","se"],
+ interests:["Wi-Fi networks and wireless communications","Computer networking and resource scheduling","Internet of Things","Machine learning","E-governance and e-commerce systems"],
+ topics:["Efficient uplink resource-unit scheduling for IEEE 802.11ax / 802.11be OFDMA WLANs",
+  "Proportional scheduling combining random and scheduled access in future Wi-Fi",
+  "Spectrum allocation for cognitive-radio based IoT networks",
+  "IoT gas-leak detection and automated fire-protection systems",
+  "Verilog / ASIC multi-processor AMBA bus interface design and arbitration",
+  "MATLAB vibration signal processing for machine fault diagnosis",
+  "ML-based detection of social-media (Facebook) addiction",
+  "Web-based movie ticket purchasing and e-commerce system design"],
+ courses:[], scholar:"", scopus:""},
+
+{name:"Md. Mijanur Rahman", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"mijanur.rahman@seu.edu.bd", room:"—", pubs:35,
+ edu:["MSc CSE — East West University"],
+ areas:["bc","se","ml","dl","health","nlp"],
+ interests:["Blockchain","Artificial Intelligence and Machine Learning","Deep Learning","Computer Vision","Health Informatics","Cybersecurity"],
+ topics:["Blockchain-based certificate and credential authentication with correction support",
+  "Blockchain teaching-evaluation and anonymous feedback systems",
+  "Blockchain for HR management, complaint platforms and workplace-harassment reporting",
+  "Blockchain and IPFS cloud storage for secure patient data sharing",
+  "Course and elective recommendation systems using K-means, association rules and SVD",
+  "Hybrid recommendation systems addressing the cold-start problem",
+  "Breast cancer prediction and U-Net ultrasound segmentation",
+  "Bangla abusive-comment and Anglo-Bangla language detection for chatbots",
+  "COVID-19 forecasting with ARIMA, exponential smoothing and deep learning",
+  "Serverless architecture and big-data analytics for personalised recommendation",
+  "Eliciting and modelling non-functional requirements in software projects"],
+ courses:["CSE365 Artificial Intelligence","CSE353 Introduction to Data Mining","CSE3011 Database Design","CSE355 Image Processing"],
+ scholar:"https://scholar.google.com/citations?user=Bag0IDMAAAAJ&hl=en",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=57207730841",
+ orcid:"https://orcid.org/0000-0002-4142-9626",
+ linkedin:"https://www.linkedin.com/in/mijanurrahman201/"},
+
+{name:"Mohammad Ashraful Hoque", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"ashraful@seu.edu.bd", room:"522, 5th Floor", pubs:10,
+ edu:["PhD in progress — Khulna University of Engineering & Technology","MSc Telecommunication & Computer Network Engineering — London South Bank University, UK","BSc CS — Ahsanullah University of Science and Technology"],
+ areas:["net","sec","bc","dl","nlp","health"],
+ interests:["Machine Learning","Blockchain","Elliptic Curve Cryptography","Delay Tolerant Networks","Software Defined Networking","Network Security"],
+ topics:["Combined SDN–DTN architecture for post-disaster communication",
+  "Power-priority models integrated with DTN routing (Spray & Wait, MaxProp)",
+  "Lightweight echo state networks and reservoir computing for vehicular intrusion detection",
+  "Vision transformers and transfer learning for brain disease detection with explainability",
+  "Bangla regional named-entity recognition benchmark datasets",
+  "Autonomous real-time face detection for intelligent security systems",
+  "K-means clustering for epidemic death-case pattern analysis",
+  "WSN-based vehicle emission and air-pollution detection"],
+ courses:["CSE341 Computer Networking","CSE425 Advanced Networking","CSE4037 Cryptography & Network Security","CSE263 Digital Logic Design","ETE281 Communication Theory"],
+ scholar:"https://scholar.google.com/citations?user=nmVkZ9kAAAAJ",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=24447703900",
+ orcid:"https://orcid.org/0009-0003-5779-1026"},
+
+{name:"Shifat Ahmed", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"shifat.ahmed@seu.edu.bd", room:"522, 5th Floor", pubs:16,
+ edu:["MSc Mathematics — Jahangirnagar University","BSc Mathematics — Jahangirnagar University"],
+ areas:["math","ml","health","xai","dl"],
+ interests:["Optimization","Machine learning"],
+ topics:["Explainable ML and DL pipelines for cancer classification (lung, breast) with SHAP and LIME",
+  "Early diagnosis of Parkinson's disease using ML, DL and hybrid techniques",
+  "Physics-informed neural networks for non-Newtonian Casson fluid flow",
+  "Mixed convective heat transfer and nanofluid simulation in lid-driven cavities",
+  "Optimal lot-size decisions for deteriorating items under all-units discount",
+  "Fuzzy logic modelling for traffic-accident prediction in Bangladesh",
+  "Simplex-method profit maximisation under budget constraints",
+  "Numerical schemes for Burger's equation",
+  "Hepatitis C prediction and heart-ailment detection from pooled clinical datasets"],
+ courses:["MAT141 Differential & Integral Calculus","MAT161 Coordinate Geometry & Vector Analysis","MAT241 Complex Variables & Transforms","MAT261 Linear Algebra & Matrices","STA281 Statistical Methods & Probability"],
+ scholar:"https://scholar.google.com/citations?hl=en&user=yk7k3dUAAAAJ",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=57218850963",
+ orcid:"https://orcid.org/0009-0002-0291-0190"},
+
+{name:"Mou Mahmood", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:true, email:"mou.mahmood@seu.edu.bd", room:"606, 6th Floor", pubs:11,
+ edu:["MSc Energy Technologies (ENTECH) — Karlsruhe Institute of Technology, Germany","BSc EEE — Ahsanullah University of Science and Technology"],
+ areas:["agri","hw","iot"],
+ interests:["Smart grids and power systems","Renewable energy and demand response","Quantum-dot cellular automata circuit design","Internet of Things"],
+ topics:["Cost-based dynamic economic dispatch optimisation via mathematical programming",
+  "Digitalisation impacts on smart grids, renewable energy and demand response",
+  "Virtual power plants — operation, benefits and challenges",
+  "Area-efficient QCA decoder, encoder, multiplexer and demultiplexer designs",
+  "Load-flow analysis of high-voltage transmission grids",
+  "DC micro-grid load distribution for PV–diesel hybrid rural systems",
+  "Graphene-based devices — applications and limitations"],
+ courses:["Electrical Circuits-I","Electronic Devices and Circuits-I"],
+ scholar:"", scopus:""},
+
+{name:"Md. Habibullah Belali", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"habibullah.belali@seu.edu.bd", room:"606, 6th Floor", pubs:19,
+ edu:["MSc Information & Communication Technology — Dhaka University of Engineering & Technology","BSc CSE — University of Dhaka"],
+ areas:["ml","dl","health","iot","sec","agri"],
+ interests:["Machine Learning — medical imaging, disease diagnosis, healthcare analysis","IoT — industry automation, smart agriculture, green environment"],
+ topics:["Automated breast cancer identification from ultrasound using deep features and fuzzy c-means",
+  "Bone osteoporosis fracture detection from X-ray images with deep learning",
+  "CNN feature hybridisation on CT scans for COVID-19 detection",
+  "Heart disease and cervical cancer prediction with stacking ensembles and hyperparameter tuning",
+  "Machine-learning rainfall prediction from weather data",
+  "Big-data security — access-control models, honeypots and third-party cloud auditing",
+  "Digital watermarking for copyright protection and ownership verification",
+  "Bangla OCR for printed text using back-propagation neural networks",
+  "Secure online e-voting system design",
+  "IoT-based automated agriculture and smart-home facial authentication"],
+ courses:["Database Management Systems","Software Engineering and System Analysis","Distributed System","Data Structures","Discrete Mathematics","Structured Programming","Computer Fundamentals"],
+ scholar:"https://scholar.google.com/citations?user=fnP0bRMAAAAJ&hl=en",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=58196590500",
+ orcid:"https://orcid.org/0009-0004-1819-1201"},
+
+{name:"Khandaker Mohammad Mohi Uddin", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"mohiuddin.kh@seu.edu.bd", room:"810, 8th Floor", pubs:120,
+ edu:["PhD CSE (AI & Machine Learning) in progress — BUET","MSc CSE by research — Jagannath University","BSc CSE — Jagannath University"],
+ areas:["ml","dl","xai","health","nlp","iot","qdna","agri","sec"],
+ interests:["Machine Learning","Deep Learning","Natural Language Processing","Internet of Things","DNA Computing","Quantum Computing"],
+ topics:["Explainable ensemble ML for disease prediction — PCOS, thyroid, cervical cancer, dementia, asthma, celiac, hepatitis",
+  "Hybrid feature selection and SMOTE pipelines for imbalanced clinical datasets",
+  "Deep CNN and multi-net fusion for diabetic foot ulcer, colorectal polyp and malaria detection",
+  "Explainable AI (SHAP, LIME, Grad-CAM) applied to medical diagnostic models",
+  "Machine-learning web and mobile diagnostic applications — lung cancer, breast cancer, CKD, heart disease",
+  "Bangla comment classification and cyberbullying detection with ML/DL fusion",
+  "Multi-valued DNA computing architectures (ROM) and quantum comparator circuits",
+  "IoT smart mirror, smart-home facial authentication and real-time attendance systems",
+  "Smart farming — IoT and deep learning for tomato cultivation and pest management",
+  "Air-quality forecasting and fruit and crop classification via deep CNN web interfaces",
+  "Infant cry analysis for birth asphyxia detection using hybrid CNN feature extraction",
+  "Phishing site detection with boosting models and SHAP"],
+ courses:["CSE365 Artificial Intelligence","CSE355 Image Processing","CSE263 Digital Logic Design","CSE441 Theory of Computing","CSE473 Software Development & Project Management","CSE181 Discrete Mathematics","CSE161 Programming Language I"],
+ scholar:"https://scholar.google.com/citations?hl=en&user=tiMeAWwAAAAJ",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=57222486039",
+ orcid:"https://orcid.org/0000-0002-5401-0437",
+ linkedin:"https://www.linkedin.com/in/khandaker-mohammad-mohi-uddin-ba9a60106/"},
+
+{name:"Md. Ashiqur Rahman", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:true, email:"ashiqur.rahman@seu.edu.bd", room:"—", pubs:0,
+ edu:[], areas:[], interests:[],
+ topics:["No research profile recorded in the source data — contact the department for current interests."],
+ courses:[], scholar:"", scopus:""},
+
+{name:"Md. Ferdous Bin Hafiz", designation:"Co-ordinator & Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"ferdous.binhafiz@seu.edu.bd", room:"810, 8th Floor", pubs:20,
+ edu:["MSc Information Technology — Charles Sturt University, Australia","BSc CSIT — Islamic University of Technology"],
+ areas:["ml","dl","xai","sec","health","nlp","agri","iot"],
+ interests:["Machine Learning","Deep Learning","Computer Vision","Cyber Security"],
+ topics:["YOLO with squeeze-and-excitation attention for weapon detection in surveillance imagery",
+  "Malware family classification with feature optimisation and explainable AI",
+  "Phishing activity detection and violence detection in video surveillance",
+  "Explainable ML for liver disease and heart failure prediction using SHAP",
+  "Boolean gene-regulatory network inference from time-series expression data",
+  "Hybrid deep learning and SVM crop disease identification — rice, potato, corn",
+  "Multimodal sentiment analysis using fusion techniques and transformers",
+  "Bengali audio categorisation, music genre classification and drug sentiment analysis",
+  "Bangladeshi number-plate detection and recognition for automated parking",
+  "IoT-based vehicle accident detection, notification and prevention"],
+ courses:["CSE161 Programming Language I","CSE281 Programming Language II (Java)","CSE181 Discrete Mathematics"],
+ scholar:"https://scholar.google.com/citations?user=QQi-INwAAAAJ&hl=en",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=59011802800",
+ orcid:"https://orcid.org/0009-0003-0218-5088"},
+
+{name:"Mahdin Mahboob", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"mahdin.mahboob@seu.edu.bd", room:"810, 8th Floor", pubs:11,
+ edu:["MSc Computer Engineering — Stony Brook University, USA","MSc Electrical Engineering — University of Southampton, UK","BSc ETE — BRAC University"],
+ areas:["dl","ml","net","iot","health","hw"],
+ interests:["Applied machine learning across domains","Wireless sensor networks and communications","Remote sensing","Structural health monitoring"],
+ topics:["Hybrid deep CNN and HOG models for Bangla isolated alpha-numerical character classification",
+  "Deep CNN models for Bangla handwritten numeral and basic character recognition",
+  "Ensemble deep learning for HER2 status classification in breast cancer histopathology",
+  "Acoustic sensor detection of vehicle stoppage at traffic stop-signs",
+  "Affordable displacement measurement tooling for structural health monitoring",
+  "M-ary orthogonal modulation signalling and detection in layered wireless sensor networks",
+  "Microwave remote sensing for flood prediction and disaster monitoring in Bangladesh",
+  "Rayleigh fading channel modelling and analysis",
+  "Automatically transferable roadway lane dividers responding to traffic flow"],
+ courses:["ETE415 Wireless & Cellular Mobile Communications","CSE309 Data Communication & Computer Networks","ETE307 Digital Communications","ETE311 Control System Engineering","ETE319 Computer Architecture & Microprocessor Interfacing","EEE181 Electrical Circuits Design I"],
+ scholar:"https://scholar.google.com/citations?user=DLpOsigAAAAJ&hl=en",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=57202288460",
+ orcid:"https://orcid.org/0009-0006-7354-1416"},
+
+{name:"Md. Shohel Babu", designation:"Co-ordinator & Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"shohel.babu@seu.edu.bd", room:"529, 5th Floor", pubs:14,
+ edu:["MSc Mathematics — Jahangirnagar University","BSc (Hons) Mathematics — Jahangirnagar University"],
+ areas:["math","ml","xai","health","dl","agri","edu"],
+ interests:["Fuzzy mathematics and fuzzy logic","Inventory management","Transportation problems","Machine Learning"],
+ topics:["Fuzzy T-norms — generators, ordering and parametric families",
+  "Bipolar fuzzy soft numbers for skill-versus-CGPA student ranking",
+  "Fuzzy methodology for facility layout planning (ALDEP / CORELAP)",
+  "Classical transportation problem — optimality conditions and solution procedures",
+  "Optimal lot-size decisions for deteriorating items under all-units discount",
+  "Explainable deep learning for tomato leaf disease detection with Grad-CAM",
+  "Feature-optimised ML with XAI for insomnia and melanoma classification",
+  "ML-based optimal student group formation from prior academic performance"],
+ courses:["MAT141 Differential & Integral Calculus","MAT161 Coordinate Geometry & Vector Analysis","MAT241 Complex Variables & Transforms","MAT261 Linear Algebra & Matrices","STA281 Statistical Methods & Probability"],
+ scholar:"https://scholar.google.com/citations?hl=en&user=5tNWuqYAAAAJ",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=57208205877",
+ orcid:"https://orcid.org/0000-0002-7319-9028"},
+
+{name:"Mohammad Ariful Huq", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"ariful.huq@seu.edu.bd", room:"810, 8th Floor", pubs:5,
+ edu:["MPhil Electronic Engineering — Macquarie University, Australia","MS Computer Engineering — Kyung Hee University, South Korea","BSc (Hons) CSE — Jahangirnagar University"],
+ areas:["net","iot","health"],
+ interests:["Wireless MAC protocol development (WBAN MAC)","IP and transport layer issues","Emergency channel access mechanisms","QoS provisioning"],
+ topics:["Improved MAC channel access for medical emergency traffic in Wireless Body Area Networks",
+  "Behaviour of IEEE 802.15.4 channel models on implant body area networks",
+  "TCP congestion control with enhanced bandwidth estimation",
+  "Smart TCP approaches for seamless vertical handoff between heterogeneous networks",
+  "Medical body area networks — opportunities, challenges and deployment practice"],
+ courses:["CSE161 Programming Language 1","CSE241 Data Structure","CSE265 Algorithm","EEE133 Computer Programming"],
+ scholar:"https://scholar.google.com/citations?user=E2jLzV8AAAAJ&hl=en", scopus:""},
+
+{name:"Dr. Mohammad Lutful Hakim", designation:"Assistant Professor", rank:"Assistant Professor",
+ type:"Full Time", onLeave:false, email:"lutful.hakim@seu.edu.bd", room:"606, 6th Floor", pubs:37,
+ edu:["PhD (Space Science) — Universiti Kebangsaan Malaysia","BSc ETE — International Islamic University Chittagong","Stanford–Elsevier World's Top 2% Scientists list, 2025"],
+ areas:["hw","net","ml","health"],
+ interests:["Antennas and propagation","Satellite communication and spaceborne antenna systems","Metamaterials and electromagnetic structures","Microwave sensors and biomedical technology","THz and EMI shielding","Machine learning and IoT"],
+ topics:["Polarization-insensitive metamaterial absorbers for X-band radar cross-section reduction",
+  "High-sensitivity split-ring-resonator microwave sensors for ML-based permittivity characterisation",
+  "Metamaterial meta-sensors for malignancy detection in the human body",
+  "Terahertz metamaterial sensors with cross-shaped resonators for chemical and alkene detection",
+  "Multilayer frequency-selective surfaces for ultra-wideband mm-wave suppression in 5G",
+  "High-EMR multi-band metamaterials for solid-material sensing",
+  "Compact conformal FSS for 5G mm-wave EMI shielding"],
+ courses:[],
+ scholar:"https://scholar.google.com/citations?hl=en&user=AgFtR8YAAAAJ",
+ scopus:"https://www.scopus.com/authid/detail.uri?authorId=57216271966",
+ orcid:"https://orcid.org/0000-0001-6620-8486",
+ linkedin:"https://www.linkedin.com/in/mohammad-lutful-hakim-967367170/"},
+
+{name:"Mohammad Shohel Rana", designation:"Lecturer", rank:"Lecturer",
+ type:"Full Time", onLeave:false, email:"mohammad.rana@seu.edu.bd", room:"606, 6th Floor", pubs:10,
+ edu:["MBA (Management Information Systems) — University of Dhaka","MA (IT) — Webster University, USA","BSc Computer & Information Technology — University of Central Missouri, USA"],
+ areas:["se","sec","net","ml","agri"],
+ interests:["Big Data","Wireless Networking","E-Commerce","Data Warehousing","Business Analytics"],
+ topics:["ETL pipelines and data warehousing for enterprise data repositories",
+  "Comparative analysis of symmetric versus asymmetric encryption algorithms",
+  "Kerberos and multi-factor authentication for internet banking security",
+  "Networking insecurity as a barrier to national digitalisation",
+  "ERP and office automation — misinterpretation versus true enterprise integration",
+  "E-commerce platform design, review-and-rating management and B2B/B2C models",
+  "Mobile ad-hoc networks (MANET) for post-disaster communication",
+  "DDoS mitigation using NGINX and API-level controls",
+  "Dynamic routing protocol benchmarking — OSPF, EIGRP, BGP, RIPv2 — on QoS and latency",
+  "House-rental recommendation with Laravel and KNN or linear regression"],
+ courses:["CSE4011 Computer Networking","CSE4017 E-Commerce","CSE4037 Cryptography & Network Security","CSE4039 Management Information System","CSE261 Numerical Methods","MIS617 Data Communication & Networking"],
+ scholar:"", scopus:""},
+
+{name:"Tashreef Muhammad", designation:"Co-ordinator & Lecturer", rank:"Lecturer",
+ type:"Full Time", onLeave:false, email:"tashreef.muhammad@seu.edu.bd", room:"606, 6th Floor", pubs:15,
+ edu:["BSc CSE — Ahsanullah University of Science and Technology"],
+ areas:["nlp","dl","xai","health","ml","fin","agri","sec"],
+ interests:["Natural Language Processing","Deep Learning and Computer Vision","Explainable AI","Transformer architectures"],
+ topics:["ANCHOLIK-NER — benchmark dataset for Bangla regional named-entity recognition",
+  "Bangla regional dialect detection and standard-to-dialect neural translation",
+  "Transformer models for detecting software aspects in StackOverflow discussion",
+  "Transformer-based stock price prediction with time2vec on the Dhaka Stock Exchange",
+  "VR-FuseNet — heterogeneous fundus data fusion for diabetic retinopathy classification",
+  "Vision transformers and transfer learning for brain disease detection with XAI",
+  "Explainable CNN architectures for pumpkin, tomato and Bangladeshi leaf disease detection",
+  "Reservoir computing (echo state networks) for vehicular network intrusion detection",
+  "Bengali sentiment analysis — Bengali versus English VADER lexicons"]
+ ,courses:[], scholar:"", scopus:""}
+];
+
+/* ================= derive ================= */
+function areasOfTopic(t, fac){
+  const s = t.toLowerCase();
+  const hit = fac.areas.filter(a => (AREA_KW[a]||[]).some(k=>s.includes(k)));
+  return hit.length ? hit : fac.areas.slice(0,2);
+}
+const TOPICS = [];
+FACULTY.forEach(f => f.topics.forEach(t => {
+  if(!f.areas.length) return;
+  TOPICS.push({text:t, fac:f, areas:areasOfTopic(t,f)});
+}));
+
+/* ================= state ================= */
+const SKEY = "seu-faculty-shortlist";
+const state = {
+  q:"", areas:new Set(), ranks:new Set(), view:"fac", sort:"rel",
+  hideLeave:false, starOnly:false,
+  stars:new Set(JSON.parse(localStorage.getItem(SKEY)||"[]"))
+};
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rx = () => state.q.trim() ? new RegExp("("+state.q.trim().replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig") : null;
+const hl = t => { const r=rx(); return r ? esc(t).replace(r,"<mark>$1</mark>") : esc(t); };
+const apOf = a => `<span class="ap ${AREAS[a].c}" data-area="${a}" role="button" tabindex="0">${esc(AREAS[a].name)}</span>`;
+
+/* ================= masthead stats ================= */
+(function(){
+  const items=[[FACULTY.length,"Faculty"],[Object.keys(AREAS).length,"Areas"],[TOPICS.length,"Topics"],
+    ["~"+FACULTY.reduce((a,f)=>a+f.pubs,0),"Publications"]];
+  $("#mstats").innerHTML = items.map(([n,l])=>`<div class="mstat"><b>${n}</b><span>${l}</span></div>`).join("");
+})();
+
+/* ================= sidebar ================= */
+function buildSidebar(){
+  const fc={}, rc={};
+  FACULTY.forEach(f=>{ f.areas.forEach(a=>fc[a]=(fc[a]||0)+1); rc[f.rank]=(rc[f.rank]||0)+1; });
+
+  let html = "";
+  for(const [ck,cl] of Object.entries(CLUSTERS)){
+    const keys = Object.keys(AREAS).filter(k=>AREAS[k].c===ck).sort((a,b)=>(fc[b]||0)-(fc[a]||0));
+    html += `<div class="fgroup" style="--gc:${cl.color}"><h4>${esc(cl.name)}</h4>` +
+      keys.map(k=>`<label class="opt" data-on="${state.areas.has(k)}">
+        <input type="checkbox" data-a="${k}" ${state.areas.has(k)?"checked":""}>
+        <span class="nm">${esc(AREAS[k].name)}</span><span class="n">${fc[k]||0}</span></label>`).join("") +
+      `</div>`;
+  }
+  html += `<div class="fgroup"><h4 style="--gc:var(--faint)">Position</h4>` +
+    Object.keys(RANK_ORDER).map(r=>`<label class="opt" data-on="${state.ranks.has(r)}">
+      <input type="checkbox" data-r="${r}" ${state.ranks.has(r)?"checked":""}>
+      <span class="nm">${esc(r)}</span><span class="n">${rc[r]||0}</span></label>`).join("") + `</div>`;
+
+  html += `<div class="fgroup"><h4 style="--gc:var(--faint)">Availability</h4>
+    <label class="opt" data-on="${state.hideLeave}"><input type="checkbox" id="fLeave" ${state.hideLeave?"checked":""}>
+      <span class="nm">Hide faculty on leave</span><span class="n">${FACULTY.filter(f=>f.onLeave).length}</span></label>
+    <label class="opt" data-on="${state.starOnly}"><input type="checkbox" id="fStar" ${state.starOnly?"checked":""}>
+      <span class="nm">★ My shortlist only</span><span class="n" id="starN">${state.stars.size}</span></label>
+    </div>`;
+
+  html += `<div class="sidefoot"><button class="linkbtn" id="reset">Reset all filters</button>
+    <button class="linkbtn" id="expand">Expand all faculty</button>
+    <button class="linkbtn" id="collapse">Collapse all</button></div>`;
+
+  $("#sidebody").innerHTML = html;
+}
+
+/* ================= filtering ================= */
+function facMatchCount(f){
+  const q = state.q.trim().toLowerCase();
+  if(!q) return 0;
+  return f.topics.filter(t=>t.toLowerCase().includes(q)).length;
+}
+function facHay(f){
+  return [f.name,f.designation,f.rank,f.email,...f.interests,...f.topics,...f.courses,...f.edu,
+          ...f.areas.map(a=>AREAS[a].name)].join(" ").toLowerCase();
+}
+function facultyList(){
+  const q = state.q.trim().toLowerCase();
+  let list = FACULTY.filter(f=>{
+    if(state.hideLeave && f.onLeave) return false;
+    if(state.starOnly && !state.stars.has(f.name)) return false;
+    if(state.ranks.size && !state.ranks.has(f.rank)) return false;
+    if(state.areas.size && ![...state.areas].some(a=>f.areas.includes(a))) return false;
+    if(q && !facHay(f).includes(q)) return false;
+    return true;
+  });
+  const s = state.sort;
+  list.sort((a,b)=>{
+    if(s==="rel"){
+      const d = facMatchCount(b)-facMatchCount(a); if(d) return d;
+      const r = RANK_ORDER[a.rank]-RANK_ORDER[b.rank]; if(r) return r;
+      return b.pubs-a.pubs;
+    }
+    if(s==="seniority"){ const r=RANK_ORDER[a.rank]-RANK_ORDER[b.rank]; return r||b.pubs-a.pubs; }
+    if(s==="pubs") return b.pubs-a.pubs;
+    return a.name.localeCompare(b.name);
+  });
+  return list;
+}
+function topicList(){
+  const q = state.q.trim().toLowerCase();
+  let list = TOPICS.filter(t=>{
+    const f=t.fac;
+    if(state.hideLeave && f.onLeave) return false;
+    if(state.starOnly && !state.stars.has(f.name)) return false;
+    if(state.ranks.size && !state.ranks.has(f.rank)) return false;
+    if(state.areas.size && ![...state.areas].some(a=>t.areas.includes(a))) return false;
+    if(q && !(t.text.toLowerCase().includes(q) || f.name.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  if(state.sort==="rel" && q){
+    list.sort((a,b)=>a.text.toLowerCase().indexOf(q)-b.text.toLowerCase().indexOf(q));
+  } else if(state.sort==="seniority"){
+    list.sort((a,b)=>RANK_ORDER[a.fac.rank]-RANK_ORDER[b.fac.rank]);
+  } else if(state.sort==="pubs"){
+    list.sort((a,b)=>b.fac.pubs-a.fac.pubs);
+  } else {
+    list.sort((a,b)=>a.text.localeCompare(b.text));
+  }
+  return list;
+}
+
+/* ================= renderers ================= */
+function facRow(f){
+  const q = state.q.trim().toLowerCase();
+  const n = facMatchCount(f);
+  const matched = q ? f.topics.filter(t=>t.toLowerCase().includes(q)) : [];
+  const others  = q ? f.topics.filter(t=>!t.toLowerCase().includes(q)) : f.topics;
+  const open = state.open?.has(f.name) || (q && n>0);
+  return `<article class="row${f.onLeave?" leave":""}" data-f="${esc(f.name)}" data-open="${!!open}">
+    <div class="rh">
+      <button class="star" data-star="${esc(f.name)}" data-on="${state.stars.has(f.name)}"
+        title="Add to shortlist" aria-label="Shortlist ${esc(f.name)}">${state.stars.has(f.name)?"★":"☆"}</button>
+      <div>
+        <p class="rname">${hl(f.name)}${f.onLeave?'<span class="tagleave">On leave</span>':''}
+          ${n?`<span class="hit">${n} matching topic${n>1?"s":""}</span>`:""}</p>
+        <p class="rdes">${esc(f.designation)}</p>
+        <div class="rpills">${f.areas.map(apOf).join("")}</div>
+      </div>
+      <div class="rmeta">
+        <span class="caret">▸</span>
+        ${f.pubs?`<span>${f.pubs}+ pubs</span>`:""}
+        <span>${f.topics.length} topics</span>
+      </div>
+    </div>
+    <div class="rb">
+      <div class="sec"><h5>Research &amp; thesis topics</h5>
+        <ul class="tl">${matched.map(t=>`<li class="m">${hl(t)}</li>`).join("")}${others.map(t=>`<li>${hl(t)}</li>`).join("")}</ul>
+      </div>
+      <div class="cols">
+        ${f.interests.length?`<div class="sec"><h5>Stated interests</h5><div class="inline">${f.interests.map(hl).join(" · ")}</div></div>`:""}
+        ${f.edu.length?`<div class="sec"><h5>Education</h5><ul class="tl">${f.edu.map(e=>`<li>${hl(e)}</li>`).join("")}</ul></div>`:""}
+        ${f.courses.length?`<div class="sec"><h5>Courses taught</h5><ul class="tl">${f.courses.map(c=>`<li>${hl(c)}</li>`).join("")}</ul></div>`:""}
+      </div>
+      <div class="links">
+        <a href="mailto:${esc(f.email)}">✉ ${esc(f.email)}</a>
+        ${f.room&&f.room!=="—"?`<a style="pointer-events:none">Room ${esc(f.room)}</a>`:""}
+        ${f.scholar?`<a href="${f.scholar}" target="_blank" rel="noopener">Google Scholar</a>`:""}
+        ${f.scopus?`<a href="${f.scopus}" target="_blank" rel="noopener">Scopus</a>`:""}
+        ${f.orcid?`<a href="${f.orcid}" target="_blank" rel="noopener">ORCID</a>`:""}
+        ${f.linkedin?`<a href="${f.linkedin}" target="_blank" rel="noopener">LinkedIn</a>`:""}
+      </div>
+    </div>
+  </article>`;
+}
+function topicRow(t){
+  return `<div class="t">
+    <div><div class="txt">${hl(t.text)}</div>
+      <div class="aps">${t.areas.map(apOf).join("")}</div></div>
+    <div class="sup"><b>${hl(t.fac.name)}</b>
+      <span>${esc(t.fac.rank)}${t.fac.onLeave?" · on leave":""}</span><br>
+      <a href="mailto:${esc(t.fac.email)}">${esc(t.fac.email)}</a></div>
+  </div>`;
+}
+function areaView(list){
+  const keys = Object.keys(AREAS)
+    .filter(k=>(!state.areas.size||state.areas.has(k)) && list.some(f=>f.areas.includes(k)))
+    .sort((a,b)=>list.filter(f=>f.areas.includes(b)).length-list.filter(f=>f.areas.includes(a)).length);
+  if(!keys.length) return emptyMsg();
+  return keys.map(k=>{
+    const cl = CLUSTERS[AREAS[k].c];
+    const people = list.filter(f=>f.areas.includes(k))
+      .sort((a,b)=>RANK_ORDER[a.rank]-RANK_ORDER[b.rank]);
+    const open = state.openA?.has(k) ?? true;
+    return `<section class="asec" data-a="${k}" data-open="${open}" style="--ac:${cl.color}">
+      <div class="ah"><div><h3>${esc(AREAS[k].name)}</h3><p class="d">${esc(AREAS[k].desc)}</p></div>
+        <span class="n">${people.length} faculty</span></div>
+      <div class="ab">${people.map(f=>{
+        const rel = f.topics.filter(t=>areasOfTopic(t,f).includes(k)).slice(0,3);
+        const use = rel.length?rel:f.topics.slice(0,2);
+        return `<div class="prow"><div class="w">${hl(f.name)}<small>${esc(f.designation)}${f.onLeave?" · on leave":""}</small></div>
+          <div class="x">${use.map(t=>`<span>${hl(t)}</span>`).join("")}</div></div>`;
+      }).join("")}</div>
+    </section>`;
+  }).join("");
+}
+function emptyMsg(){
+  return `<div class="empty"><b>Nothing matches these filters</b>
+    Try removing an area, widening the position filter, or clearing the search box.</div>`;
+}
+
+/* ================= active filter pills ================= */
+function renderPills(){
+  const p=[];
+  [...state.areas].forEach(a=>p.push(`<span class="pill">${esc(AREAS[a].name)}<button data-off-a="${a}" aria-label="Remove">×</button></span>`));
+  [...state.ranks].forEach(r=>p.push(`<span class="pill">${esc(r)}<button data-off-r="${r}" aria-label="Remove">×</button></span>`));
+  if(state.hideLeave) p.push(`<span class="pill">On-leave hidden<button data-off="leave" aria-label="Remove">×</button></span>`);
+  if(state.starOnly)  p.push(`<span class="pill">★ Shortlist only<button data-off="star" aria-label="Remove">×</button></span>`);
+  if(state.q.trim())  p.push(`<span class="pill">“${esc(state.q.trim())}”<button data-off="q" aria-label="Remove">×</button></span>`);
+  if(p.length>1) p.push(`<span class="pill reset" data-off="all">Clear all</span>`);
+  $("#pills").innerHTML = p.join("");
+  const n = state.areas.size+state.ranks.size+(state.hideLeave?1:0)+(state.starOnly?1:0);
+  $("#sideCnt").textContent = n ? `${n} active` : "";
+}
+
+/* ================= render ================= */
+function render(){
+  renderPills();
+  const out = $("#out");
+  if(state.view==="topic"){
+    const l = topicList();
+    $("#count").textContent = `${l.length} topic${l.length===1?"":"s"} · ${new Set(l.map(t=>t.fac.name)).size} supervisors`;
+    out.innerHTML = l.length ? `<div class="tix">${l.map(topicRow).join("")}</div>` : emptyMsg();
+  } else {
+    const l = facultyList();
+    $("#count").textContent = `${l.length} of ${FACULTY.length} faculty`;
+    out.innerHTML = state.view==="fac"
+      ? (l.length ? `<div class="rows">${l.map(facRow).join("")}</div>` : emptyMsg())
+      : areaView(l);
+  }
+}
+
+/* ================= events ================= */
+state.open = new Set(); state.openA = null;
+
+$("#q").addEventListener("input", e=>{ state.q=e.target.value; render(); });
+$("#sort").addEventListener("change", e=>{ state.sort=e.target.value; render(); });
+document.querySelectorAll(".seg [data-view]").forEach(b=>b.addEventListener("click",()=>{
+  state.view=b.dataset.view;
+  document.querySelectorAll(".seg [data-view]").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  render();
+}));
+$("#theme").addEventListener("click", ()=>{
+  const cur = document.documentElement.getAttribute("data-theme");
+  const dark = cur ? cur==="dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+  document.documentElement.setAttribute("data-theme", dark?"light":"dark");
+});
+$("#sidetoggle").addEventListener("click", ()=>{
+  const s=$("#side"), open = s.dataset.open==="true";
+  s.dataset.open = String(!open); $("#sidetoggle").setAttribute("aria-expanded", String(!open));
+});
+
+$("#sidebody").addEventListener("change", e=>{
+  const t=e.target;
+  if(t.dataset.a){ t.checked?state.areas.add(t.dataset.a):state.areas.delete(t.dataset.a); }
+  else if(t.dataset.r){ t.checked?state.ranks.add(t.dataset.r):state.ranks.delete(t.dataset.r); }
+  else if(t.id==="fLeave") state.hideLeave=t.checked;
+  else if(t.id==="fStar")  state.starOnly=t.checked;
+  const lab=t.closest(".opt"); if(lab) lab.dataset.on=t.checked;
+  render();
+});
+$("#sidebody").addEventListener("click", e=>{
+  if(e.target.id==="reset"){
+    state.q=""; $("#q").value=""; state.areas.clear(); state.ranks.clear();
+    state.hideLeave=false; state.starOnly=false; buildSidebar(); render();
+  }
+  if(e.target.id==="expand"){ state.open=new Set(FACULTY.map(f=>f.name)); state.openA=null; render(); }
+  if(e.target.id==="collapse"){ state.open=new Set(); state.openA=new Set(); render(); }
+});
+
+$("#pills").addEventListener("click", e=>{
+  const b=e.target.closest("[data-off],[data-off-a],[data-off-r]"); if(!b) return;
+  if(b.dataset.offA) state.areas.delete(b.dataset.offA);
+  else if(b.dataset.offR) state.ranks.delete(b.dataset.offR);
+  else if(b.dataset.off==="leave") state.hideLeave=false;
+  else if(b.dataset.off==="star") state.starOnly=false;
+  else if(b.dataset.off==="q"){ state.q=""; $("#q").value=""; }
+  else if(b.dataset.off==="all"){ state.q=""; $("#q").value=""; state.areas.clear(); state.ranks.clear(); state.hideLeave=false; state.starOnly=false; }
+  buildSidebar(); render();
+});
+
+$("#out").addEventListener("click", e=>{
+  const st = e.target.closest("[data-star]");
+  if(st){
+    e.stopPropagation();
+    const n=st.dataset.star;
+    state.stars.has(n)?state.stars.delete(n):state.stars.add(n);
+    localStorage.setItem(SKEY, JSON.stringify([...state.stars]));
+    const sn=$("#starN"); if(sn) sn.textContent=state.stars.size;
+    render(); return;
+  }
+  const ap = e.target.closest(".ap[data-area]");
+  if(ap){
+    e.stopPropagation();
+    const a=ap.dataset.area;
+    state.areas.has(a)?state.areas.delete(a):state.areas.add(a);
+    buildSidebar(); render(); window.scrollTo({top:0,behavior:"smooth"}); return;
+  }
+  const rh = e.target.closest(".rh");
+  if(rh){
+    const row=rh.closest(".row"), n=row.dataset.f;
+    state.open.has(n)?state.open.delete(n):state.open.add(n);
+    row.dataset.open = state.open.has(n); return;
+  }
+  const ah = e.target.closest(".ah");
+  if(ah){
+    const sec=ah.closest(".asec"), k=sec.dataset.a;
+    if(!state.openA) state.openA=new Set(Object.keys(AREAS));
+    state.openA.has(k)?state.openA.delete(k):state.openA.add(k);
+    sec.dataset.open = state.openA.has(k);
+  }
+});
+
+document.addEventListener("keydown", e=>{
+  if(e.key==="/" && document.activeElement!==$("#q")){ e.preventDefault(); $("#q").focus(); }
+  if(e.key==="Escape" && document.activeElement===$("#q")){ state.q=""; $("#q").value=""; $("#q").blur(); render(); }
+});
+
+buildSidebar(); render();
+</script>
+</body>
+</html>
